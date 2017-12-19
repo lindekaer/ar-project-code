@@ -1,0 +1,91 @@
+<head>
+  <!-- Include and configure Firebase -->
+  <script src="https://www.gstatic.com/firebasejs/4.6.2/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/4.6.2/firebase-database.js"></script>
+  <script>
+    var config = {
+      apiKey: "AIzaSyCbM9FEIH7wkNtPc4yoyBkgY0Ny32DxjAs",
+      authDomain: "coop-augmented-reality.firebaseapp.com",
+      databaseURL: "https://coop-augmented-reality.firebaseio.com/",
+    };
+    firebase.initializeApp(config);
+    window.database = firebase.database();
+  </script>
+
+  <!-- Include Aframe and AR.js -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/aframe/0.7.1/aframe.min.js"></script>
+  <script src="aframe-ar.js"></script>
+
+  <script>
+    console.log('*** INITIALIZING DATA RECORDING ***')
+    window.AR_EXPERIMENT = {
+      startTime: Date.now(),
+      cameraOpened: null,
+      markerFound: false,
+      dataPoints: {}
+    }
+
+    setTimeout(() => {
+      // Format data for saving
+      // const data = Object.keys(AR_EXPERIMENT.dataPoints)
+      // .map(k => ({ key: k, value: AR_EXPERIMENT.dataPoints[k] - AR_EXPERIMENT.startTime }))
+
+      const data = AR_EXPERIMENT.dataPoints
+
+      console.log(data)
+
+      // Sort data points and print to screen
+      // data.sort((a, b) => {
+      //   return a.value > b.value
+      // }).forEach(obj => {
+      //   console.log(`** ${obj.key} **`)
+      //   console.log(obj.value + ' ms')
+      // })
+
+      // Save data and reload page
+      // const dataToSave = data.reduce((prev, obj) => {
+      //   prev[obj.key] = obj.value
+      //   return prev
+      // }, {})
+      const dataToSave = data
+      dataToSave.cameraOpened = AR_EXPERIMENT.cameraOpened
+      dataToSave.startTime = AR_EXPERIMENT.startTime
+      database
+        .ref('data/' + Date.now())
+        .set(dataToSave)
+        .then(() => AR_EXPERIMENT.markerFound && location.reload())
+    }, 3000);
+  </script>
+
+
+  <script>
+    AFRAME.registerComponent('obj', {
+      schema: {
+        stlUrl: { type: 'string' },
+      },
+      init: function () {
+        var el = this.el;
+        var material = new THREE.MeshPhongMaterial({
+          color: 0xea0000,
+          specular: 0x111111,
+          shininess: 400
+        })
+        var geometry = new THREE.BoxGeometry(1, 1, 1);
+        var mesh = new THREE.Mesh(geometry, material);
+        el.setObject3D('mesh', mesh);
+      },
+      tick: function (time) {
+        window.AR_EXPERIMENT.firstPaintTick = Date.now()
+      }
+    });
+  </script>
+</head>
+
+<body style='margin : 0px; overflow: hidden;'>
+  <a-scene embedded arjs='trackingMethod: best;'>
+    <a-anchor hit-testing-enabled='true'>
+      <a-entity obj=""></a-entity>
+    </a-anchor>
+    <a-camera-static/>
+  </a-scene>
+</body>
